@@ -1,0 +1,5 @@
+servidor/firebase-key.json
+*.json
+.env
+servidor/firebase-key.json
+*.json

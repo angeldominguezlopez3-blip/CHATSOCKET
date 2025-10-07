@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servidor - Sistema de Mensajes en Tiempo Real</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        /* Panel de Mensajes */
+        .messages-panel {
+            background: #f8f9fa;
+            border-right: 2px solid #e9ecef;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .panel-header h2 {
+            color: #2c3e50;
+            font-size: 1.4em;
+        }
+
+        .stats {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .messages-container {
+            flex: 1;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .message {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid #3498db;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .message:hover {
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .username {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.95em;
+        }
+
+        .message-time {
+            font-size: 0.75em;
+            color: #6c757d;
+        }
+
+        .message-content {
+            color: #495057;
+            line-height: 1.4;
+            padding-left: 40px;
+        }
+
+        /* Panel de Control */
+        .control-panel {
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-panel h2 {
+            margin-bottom: 20px;
+            font-weight: 300;
+            font-size: 1.4em;
+            text-align: center;
+        }
+
+        .user-section {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .current-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .user-avatar.large {
+            width: 48px;
+            height: 48px;
+            font-size: 1.1em;
+        }
+
+        .user-details h3 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .user-status {
+            font-size: 0.8em;
+            color: #95a5a6;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background: #34495e;
+            color: white;
+            font-size: 14px;
+            border: 1px solid #4a6572;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3498db;
+            background: #3c556b;
+        }
+
+        .input-field::placeholder {
+            color: #95a5a6;
+        }
+
+        .send-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .send-button:hover {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .control-button {
+            flex: 1;
+            padding: 10px;
+            background: #34495e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 0.9em;
+        }
+
+        .control-button:hover {
+            background: #4a6572;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        /* Nuevos estilos para Socket.IO */
+        .message.sistema {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            font-style: italic;
+        }
+        
+        .message.sistema .message-content {
+            color: #856404;
+        }
+        
+        .online-users {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        
+        .user-count {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .back-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Scrollbar personalizado */
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Servidor - Chat</h1>
+        </div>
+        
+        <div class="main-content">
+            <div class="messages-panel">
+                <div class="panel-header">
+                    <h2>📨 Bandeja de Mensajes</h2>
+                    <div class="stats">
+                        <span id="totalMensajes">0</span> mensajes • 
+                        <span id="totalUsuarios">0</span> usuarios •
+                        <span id="onlineUsers" class="user-count">0</span> en línea
+                    </div>
+                </div>
+                
+                <div class="online-users" id="onlineUsersContainer" style="display: none;">
+                    <strong>Usuarios conectados:</strong> 
+                    <span id="usuariosConectadosLista"></span>
+                </div>
+                
+                <div id="mensajesContainer" class="messages-container">
+                    <div class="empty-state">
+                        <p>Conectando al chat...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h2>👤 Control de Usuario</h2>
+                
+                <div class="user-section">
+                    <div class="current-user">
+                        <div class="user-avatar large" id="userAvatar">U</div>
+                        <div class="user-details">
+                            <h3 id="currentUsername">Usuario</h3>
+                            <div class="user-status" id="userStatus">Conectando...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="back-link">
+                        <a href="/">← Cambiar de usuario</a>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="mensajeInput">Mensaje:</label>
+                    <input type="text" id="mensajeInput" class="input-field" 
+                           placeholder="Escribe tu mensaje aquí..." maxlength="500">
+                </div>
+                
+                <button id="enviarBtn" class="send-button">📤 Enviar Mensaje</button>
+                
+                <div class="status" id="status"></div>
+                
+                <div class="controls">
+                    <button id="refreshBtn" class="control-button">🔄 Recargar</button>
+                    <button id="clearBtn" class="control-button">🗑️ Limpiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO Client -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        class ServidorMensajesTiempoReal {
+            constructor() {
+                this.usuario = this.getUsuarioFromURL();
+                this.socket = null;
+                this.initializeElements();
+                
+                if (!this.usuario) {
+                    window.location.href = '/';
+                    return;
+                }
+                
+                this.conectarSocket();
+                this.setupEventListeners();
+                this.displayUsuario();
+            }
+
+            getUsuarioFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('usuario');
+            }
+
+            initializeElements() {
+                this.mensajeInput = document.getElementById('mensajeInput');
+                this.enviarBtn = document.getElementById('enviarBtn');
+                this.refreshBtn = document.getElementById('refreshBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.status = document.getElementById('status');
+                this.mensajesContainer = document.getElementById('mensajesContainer');
+                this.totalMensajes = document.getElementById('totalMensajes');
+                this.totalUsuarios = document.getElementById('totalUsuarios');
+                this.onlineUsers = document.getElementById('onlineUsers');
+                this.onlineUsersContainer = document.getElementById('onlineUsersContainer');
+                this.usuariosConectadosLista = document.getElementById('usuariosConectadosLista');
+                this.currentUsername = document.getElementById('currentUsername');
+                this.userAvatar = document.getElementById('userAvatar');
+                this.userStatus = document.getElementById('userStatus');
+            }
+
+            conectarSocket() {
+                // Conectar al servidor de Socket.IO
+                this.socket = io();
+                
+                // Configurar event listeners del socket
+                this.socket.on('connect', () => {
+                    console.log('Conectado al servidor con ID:', this.socket.id);
+                    this.mostrarEstado('Conectado al chat', 'success');
+                    this.userStatus.textContent = 'Conectado';
+                    
+                    // Establecer usuario en el servidor
+                    this.socket.emit('establecer-usuario', this.usuario);
+                    
+                    // Cargar mensajes existentes
+                    this.socket.emit('cargar-mensajes');
+                });
+
+                this.socket.on('mensajes-cargados', (mensajes) => {
+                    this.mostrarMensajes(mensajes);
+                    this.actualizarEstadisticas(mensajes);
+                });
+
+                this.socket.on('nuevo-mensaje', (mensaje) => {
+                    this.agregarMensaje(mensaje);
+                    this.actualizarEstadisticas();
+                });
+
+                this.socket.on('usuarios-actualizados', (usuarios) => {
+                    this.actualizarUsuariosConectados(usuarios);
+                });
+
+                this.socket.on('error', (error) => {
+                    this.mostrarEstado(`Error: ${error}`, 'error');
+                });
+
+                this.socket.on('disconnect', () => {
+                    this.mostrarEstado('Desconectado del servidor', 'error');
+                    this.userStatus.textContent = 'Desconectado';
+                });
+            }
+
+            setupEventListeners() {
+                this.enviarBtn.addEventListener('click', () => this.enviarMensaje());
+                this.refreshBtn.addEventListener('click', () => this.recargarMensajes());
+                this.clearBtn.addEventListener('click', () => this.limpiarInterfaz());
+                
+                this.mensajeInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.enviarMensaje();
+                    }
+                });
+            }
+
+            displayUsuario() {
+                this.currentUsername.textContent = this.usuario;
+                this.userAvatar.textContent = this.usuario.charAt(0).toUpperCase();
+                this.userAvatar.style.background = this.generarColor(this.usuario);
+            }
+
+            enviarMensaje() {
+                const mensaje = this.mensajeInput.value.trim();
+
+                if (!mensaje) {
+                    this.mostrarEstado('Por favor escribe un mensaje', 'error');
+                    this.mensajeInput.focus();
+                    return;
+                }
+
+                // Enviar mensaje a través del socket
+                this.socket.emit('enviar-mensaje', {
+                    usuario: this.usuario,
+                    mensaje: mensaje
+                });
+
+                this.mensajeInput.value = '';
+                this.mensajeInput.focus();
+            }
+
+            recargarMensajes() {
+                this.socket.emit('cargar-mensajes');
+                this.mostrarEstado('Recargando mensajes...', 'success');
+            }
+
+            mostrarMensajes(mensajes) {
+                this.mensajesContainer.innerHTML = '';
+                
+                if (mensajes.length === 0) {
+                    this.mensajesContainer.innerHTML = `
+                        <div class="empty-state">
+                            <p>No hay mensajes aún</p>
+                            <p style="font-size: 0.9em; margin-top: 10px;">Sé el primero en enviar un mensaje</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                mensajes.forEach(msg => this.agregarMensaje(msg));
+                this.mensajesContainer.scrollTop = this.mensajesContainer.scrollHeight;
+            }
+
+            agregarMensaje(msg) {
+                const messageElement = document.createElement('div');
+                
+                if (msg.tipo === 'sistema') {
+                    messageElement.className = 'message sistema';
+                    messageElement.innerHTML = `
+                        <div class="message-content">${this.escapeHtml(msg.mensaje)}</div>
+                        <div class="message-time">${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                    `;
+                } else {
+                    messageElement.className = 'message';
+                    
+                    const time = new Date(msg.timestamp).toLocaleTimeString();
+                    const date = new Date(msg.timestamp).toLocaleDateString();
+                    const userInitial = msg.usuario.charAt(0).toUpperCase();
+                    const userColor = this.generarColor(msg.usuario);
+                    const esMio = msg.usuario === this.usuario;
+                    
+                    messageElement.innerHTML = `
+                        <div class="message-header">
+                            <div class="user-info">
+                                <div class="user-avatar" style="background: ${userColor}">${userInitial}</div>
+                                <span class="username">${this.escapeHtml(msg.usuario)}</span>
+                                ${esMio ? '<span style="color: #3498db; font-size: 0.8em;">(Tú)</span>' : ''}
+                            </div>
+                            <div class="message-time">${date} ${time}</div>
+                        </div>
+                        <div class="message-content">${this.escapeHtml(msg.mensaje)}</div>
+                    `;
+                    
+                    if (esMio) {
+                        messageElement.style.borderLeftColor = '#2ecc71';
+                        messageElement.style.background = '#f8fff9';
+                    }
+                }
+                
+                this.mensajesContainer.appendChild(messageElement);
+                this.mensajesContainer.scrollTop = this.mensajesContainer.scrollHeight;
+            }
+
+            actualizarEstadisticas(mensajes) {
+                if (mensajes) {
+                    this.totalMensajes.textContent = mensajes.length;
+                    const usuariosUnicos = new Set(mensajes.map(msg => msg.usuario));
+                    this.totalUsuarios.textContent = usuariosUnicos.size;
+                }
+            }
+
+            actualizarUsuariosConectados(usuarios) {
+                this.onlineUsers.textContent = usuarios.length;
+                this.usuariosConectadosLista.textContent = usuarios.join(', ');
+                
+                if (usuarios.length > 0) {
+                    this.onlineUsersContainer.style.display = 'block';
+                } else {
+                    this.onlineUsersContainer.style.display = 'none';
+                }
+            }
+
+            limpiarInterfaz() {
+                this.mensajeInput.value = '';
+                this.mostrarEstado('Campo de mensaje limpiado', 'success');
+            }
+
+            generarColor(nombre) {
+                const colores = [
+                    'linear-gradient(135deg, #3498db, #2980b9)',
+                    'linear-gradient(135deg, #e74c3c, #c0392b)',
+                    'linear-gradient(135deg, #2ecc71, #27ae60)',
+                    'linear-gradient(135deg, #f39c12, #d35400)',
+                    'linear-gradient(135deg, #9b59b6, #8e44ad)',
+                    'linear-gradient(135deg, #1abc9c, #16a085)'
+                ];
+                const index = nombre.length % colores.length;
+                return colores[index];
+            }
+
+            mostrarEstado(message, type) {
+                this.status.textContent = message;
+                this.status.className = `status ${type}`;
+                
+                setTimeout(() => {
+                    this.status.textContent = '';
+                    this.status.className = 'status';
+                }, 4000);
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // Inicializar el sistema cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            new ServidorMensajesTiempoReal();
+        });
+    </script>
+</body>
+</html>
