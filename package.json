@@ -1,0 +1,19 @@
+{
+  "name": "grupo_mensajes",
+  "version": "1.0.0",
+  "description": "Sistema de mensajes con Socket.IO y Firebase",
+  "main": "servidor/index.js",
+  "scripts": {
+    "start": "node servidor/index.js",
+    "dev": "nodemon servidor/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "firebase-admin": "^11.8.0",
+    "cors": "^2.8.5",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
